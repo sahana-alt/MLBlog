@@ -3,18 +3,18 @@ project:
   output-dir: docs 
 
 website:
-  repo-url: https://github.com/The-Swapster/blogsml1
+  repo-url: https://github.com/sahana-alt/blogsml1
+  title: "Blogs ML1"
   repo-actions: [source]
-  title: "BlogsML1"
   navbar:
     right:
-      - text: About Me
-        href: https://swapnilsingh.net/
       - icon: github
         href: https://github.com/
+      - icon: twitter
+        href: https://twitter.com
 format:
   html:
-    theme: cyborg
+    theme: cosmo
     css: styles.css
 
 
