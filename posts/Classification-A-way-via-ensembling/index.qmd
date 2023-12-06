@@ -1,0 +1,321 @@
+---
+title: "Classification: A way via ensembling"
+image: image.jpeg
+author: "Swapnil Singh"
+date: "2023-11-07"
+categories: [classification, ensemble, supervised learning]
+format:
+    html:
+        code-fold: true
+        code-tools: true
+jupyter: python3
+---
+
+Classification is a fundamental task in machine learning that involves categorizing input data into predefined classes. Ensemble methods are powerful techniques that combine multiple individual models to enhance predictive performance and robustness. This blog provides an overview of popular ensemble methods for classification and demonstrates their implementation in Python, including the visualization of important evaluation metrics such as the ROC curve, PR curve, and confusion matrix.
+
+# Stacking
+Stacking, also known as stacked generalization, is an ensemble learning technique that combines the predictions of multiple base models through a meta-learner to improve overall predictive performance. In stacking, the predictions from diverse base models are used as features to train a higher-level model, known as the meta-learner, which then generates the final predictions. This approach allows the meta-learner to learn how to weigh the outputs of the base models effectively, leveraging the strengths of each individual model to make more accurate and robust predictions.
+
+## Python implimentation
+@fig-stacking-results visualizes the results of Stacking Classifier on the Breast Cancer. @fig-stacking-results-1 shows the confusion matrix, @fig-stacking-results-2 shows the RoC Curve, and  @fig-stacking-results-3 shows the Precision Recall Cruve of Stacking Classifier on the Breast Cancer
+```{python}
+#| label: fig-stacking-results
+#| fig-cap: "Stacking Results"
+#| fig-subcap:
+#|  - Confusion Matrix
+#|  - RoC Curve
+#|  - Precision Recall Curve
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import StackingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import label_binarize
+from sklearn.neighbors import KNeighborsClassifier
+import matplotlib.pyplot as plt
+from sklearn import metrics
+import numpy as  np
+from itertools import cycle
+import pandas as pd
+import warnings
+warnings.filterwarnings("ignore")
+
+# Load the Breast Cancer dataset
+data = pd.read_csv('breast_cancer.csv')
+X = data.iloc[:,2:-1]
+y = data[['diagnosis']]
+y = label_binarize(y, classes=['M','B'])
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X.values, y, test_size=0.2, random_state=42)
+
+# Initialize the base classifiers
+estimators = [
+    ('lr', LogisticRegression(max_iter=500)),
+    ('dt', DecisionTreeClassifier()),
+    ('rf', RandomForestClassifier()),
+    ('knn', KNeighborsClassifier())
+]
+
+# Initialize the stacking classifier
+clf = StackingClassifier(estimators=estimators, final_estimator=LogisticRegression(max_iter=500))
+
+# Fit the model on the training data
+clf.fit(X_train, y_train)
+
+# Evaluate the model on the test data
+y_test_pred = clf.predict(X_test)
+y_test_proba = clf.predict_proba(X_test)
+
+print("Accuracy:",metrics.accuracy_score(y_test, y_test_pred))
+print("Precision:", metrics.precision_score(y_test, y_test_pred, average='weighted'))
+print("Recall:", metrics.recall_score(y_test, y_test_pred, average='weighted'))
+print("sensitivity:", metrics.recall_score(y_test, y_test_pred, average='weighted'))
+print("f1 score:", metrics.f1_score(y_test, y_test_pred, average='weighted'))
+print(metrics.classification_report(y_test, y_test_pred, target_names = ['M','B']))
+cm = metrics.confusion_matrix(y_test, y_test_pred)
+plt.figure(figsize=(4, 3), dpi=600)
+plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+plt.title('Confusion Matrix')
+classes = ['M','B']
+tick_marks = np.arange(len(classes))
+plt.xticks(tick_marks, classes)
+plt.yticks(tick_marks, classes)
+thresh = cm.max() / 2.
+for i, j in np.ndindex(cm.shape):
+    plt.text(j, i, cm[i, j],
+             horizontalalignment="center",
+             color="white" if cm[i, j] > thresh else "black")
+plt.tight_layout()
+plt.ylabel('True label')
+plt.xlabel('Predicted label')
+plt.show()
+
+# Compute ROC curve and ROC area
+fpr, tpr, _ = metrics.roc_curve(y_test, y_test_proba[:, 1])
+roc_auc = metrics.auc(fpr, tpr)
+
+# Plot ROC curve
+plt.figure(figsize=(8, 6))
+plt.plot(fpr, tpr, label=f'AUC = {roc_auc:.2f}')
+plt.plot([0, 1], [0, 1], 'k--', color='grey', label='Random')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic (ROC) Curve')
+plt.legend(loc="lower right")
+plt.show()
+
+
+# Compute precision-recall curve and area
+precision, recall, _ = metrics.precision_recall_curve(y_test, y_test_proba[:, 1])
+pr_auc = metrics.average_precision_score(y_test, y_test_proba[:, 1])
+
+# Plot Precision-Recall curve
+plt.figure(figsize=(8, 6))
+plt.plot(recall, precision, label=f'AUC = {pr_auc:.2f}')
+plt.xlabel('Recall')
+plt.ylabel('Precision')
+plt.title('Precision-Recall Curve')
+plt.legend(loc="lower left")
+plt.show()
+```
+
+# Bagging
+Bagging, or Bootstrap Aggregating, is a popular ensemble learning technique used to improve the stability and accuracy of machine learning models, particularly for high variance models. Bagging involves training multiple instances of the same learning algorithm on different subsets of the training data. Each subset is sampled with replacement, allowing for multiple subsets to contain duplicate instances, thus creating "bootstrap" samples.
+
+## Python implimentation
+@fig-stacking-results visualizes the results of Bagging Classifier on the Breast Cancer. @fig-stacking-results-1 shows the confusion matrix, @fig-bagging-results-2 shows the RoC Curve, and  @fig-stacking-results-3 shows the Precision Recall Cruve of Bagging Classifier on the Breast Cancer
+```{python}
+#| label: fig-bagging-results
+#| fig-cap: "Bagging Results"
+#| fig-subcap:
+#|  - Confusion Matrix
+#|  - RoC Curve
+#|  - Precision Recall Curve
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import BaggingClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.preprocessing import label_binarize
+import matplotlib.pyplot as plt
+from sklearn import metrics
+import numpy as  np
+from itertools import cycle
+import pandas as pd
+import warnings
+warnings.filterwarnings("ignore")
+
+# Load the Breast Cancer dataset
+data = pd.read_csv('breast_cancer.csv')
+X = data.iloc[:,2:-1]
+y = data[['diagnosis']]
+y = label_binarize(y, classes=['M','B'])
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X.values, y, test_size=0.2, random_state=42)
+
+# Initialize the base classifiers
+dt = DecisionTreeClassifier()
+
+# Initialize the stacking classifier
+clf = BaggingClassifier(estimator=dt, n_estimators=10)
+
+# Fit the model on the training data
+clf.fit(X_train, y_train)
+
+# Evaluate the model on the test data
+y_test_pred = clf.predict(X_test)
+y_test_proba = clf.predict_proba(X_test)
+
+print("Accuracy:",metrics.accuracy_score(y_test, y_test_pred))
+print("Precision:", metrics.precision_score(y_test, y_test_pred, average='weighted'))
+print("Recall:", metrics.recall_score(y_test, y_test_pred, average='weighted'))
+print("sensitivity:", metrics.recall_score(y_test, y_test_pred, average='weighted'))
+print("f1 score:", metrics.f1_score(y_test, y_test_pred, average='weighted'))
+print(metrics.classification_report(y_test, y_test_pred, target_names = ['M','B']))
+cm = metrics.confusion_matrix(y_test, y_test_pred)
+plt.figure(figsize=(4, 3), dpi=600)
+plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+plt.title('Confusion Matrix')
+classes = ['M','B']
+tick_marks = np.arange(len(classes))
+plt.xticks(tick_marks, classes)
+plt.yticks(tick_marks, classes)
+thresh = cm.max() / 2.
+for i, j in np.ndindex(cm.shape):
+    plt.text(j, i, cm[i, j],
+             horizontalalignment="center",
+             color="white" if cm[i, j] > thresh else "black")
+plt.tight_layout()
+plt.ylabel('True label')
+plt.xlabel('Predicted label')
+plt.show()
+
+# Compute ROC curve and ROC area
+fpr, tpr, _ = metrics.roc_curve(y_test, y_test_proba[:, 1])
+roc_auc = metrics.auc(fpr, tpr)
+
+# Plot ROC curve
+plt.figure(figsize=(8, 6))
+plt.plot(fpr, tpr, label=f'AUC = {roc_auc:.2f}')
+plt.plot([0, 1], [0, 1], 'k--', color='grey', label='Random')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic (ROC) Curve')
+plt.legend(loc="lower right")
+plt.show()
+
+
+# Compute precision-recall curve and area
+precision, recall, _ = metrics.precision_recall_curve(y_test, y_test_proba[:, 1])
+pr_auc = metrics.average_precision_score(y_test, y_test_proba[:, 1])
+
+# Plot Precision-Recall curve
+plt.figure(figsize=(8, 6))
+plt.plot(recall, precision, label=f'AUC = {pr_auc:.2f}')
+plt.xlabel('Recall')
+plt.ylabel('Precision')
+plt.title('Precision-Recall Curve')
+plt.legend(loc="lower left")
+plt.show()
+```
+
+# Boosting
+Boosting is a machine learning ensemble technique that aims to convert weak learners into strong ones. It involves sequentially training a series of weak models and adjusting their weights based on performance to create a powerful ensemble model. The key idea is to combine several weak learners to form a strong learner, which can improve the overall performance and predictive accuracy compared to any individual model in the ensemble. Boosting works by assigning a weight to each training example, which is modified during the training process based on the performance of the models. Examples that are misclassified by the previous models are given higher weights so that subsequent models focus more on these examples. As a result, the final model focuses more on the difficult-to-classify examples, effectively reducing the overall error.
+
+## Python implimentation
+@fig-boosting-results visualizes the results of Boosting Classifier on the Breast Cancer. @fig-boosting-results-1 shows the confusion matrix, @fig-boosting-results-2 shows the RoC Curve, and  @fig-boosting-results-3 shows the Precision Recall Cruve of Boosting Classifier on the Breast Cancer
+```{python}
+#| label: fig-boosting-results
+#| fig-cap: "Boosting Results"
+#| fig-subcap:
+#|  - Confusion Matrix
+#|  - RoC Curve
+#|  - Precision Recall Curve
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.preprocessing import label_binarize
+import matplotlib.pyplot as plt
+from sklearn import metrics
+import numpy as  np
+from itertools import cycle
+import pandas as pd
+import warnings
+warnings.filterwarnings("ignore")
+
+# Load the Breast Cancer dataset
+X = data.iloc[:,2:-1]
+y = data[['diagnosis']]
+y = label_binarize(y, classes=['M','B'])
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X.values, y, test_size=0.2, random_state=42)
+
+# Initialize the base classifiers
+dt = DecisionTreeClassifier()
+
+# Initialize the stacking classifier
+clf = AdaBoostClassifier(estimator=dt, n_estimators=10)
+
+# Fit the model on the training data
+clf.fit(X_train, y_train)
+
+# Evaluate the model on the test data
+y_test_pred = clf.predict(X_test)
+y_test_proba = clf.predict_proba(X_test)
+
+print("Accuracy:",metrics.accuracy_score(y_test, y_test_pred))
+print("Precision:", metrics.precision_score(y_test, y_test_pred, average='weighted'))
+print("Recall:", metrics.recall_score(y_test, y_test_pred, average='weighted'))
+print("sensitivity:", metrics.recall_score(y_test, y_test_pred, average='weighted'))
+print("f1 score:", metrics.f1_score(y_test, y_test_pred, average='weighted'))
+print(metrics.classification_report(y_test, y_test_pred, target_names = ['M', 'B']))
+cm = metrics.confusion_matrix(y_test, y_test_pred)
+plt.figure(figsize=(4, 3), dpi=600)
+plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+plt.title('Confusion Matrix')
+classes = ['M', 'B']
+tick_marks = np.arange(len(classes))
+plt.xticks(tick_marks, classes)
+plt.yticks(tick_marks, classes)
+thresh = cm.max() / 2.
+for i, j in np.ndindex(cm.shape):
+    plt.text(j, i, cm[i, j],
+             horizontalalignment="center",
+             color="white" if cm[i, j] > thresh else "black")
+plt.tight_layout()
+plt.ylabel('True label')
+plt.xlabel('Predicted label')
+plt.show()
+
+# Compute ROC curve and ROC area
+fpr, tpr, _ = metrics.roc_curve(y_test, y_test_proba[:, 1])
+roc_auc = metrics.auc(fpr, tpr)
+
+# Plot ROC curve
+plt.figure(figsize=(8, 6))
+plt.plot(fpr, tpr, label=f'AUC = {roc_auc:.2f}')
+plt.plot([0, 1], [0, 1], 'k--', color='grey', label='Random')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic (ROC) Curve')
+plt.legend(loc="lower right")
+plt.show()
+
+
+# Compute precision-recall curve and area
+precision, recall, _ = metrics.precision_recall_curve(y_test, y_test_proba[:, 1])
+pr_auc = metrics.average_precision_score(y_test, y_test_proba[:, 1])
+
+# Plot Precision-Recall curve
+plt.figure(figsize=(8, 6))
+plt.plot(recall, precision, label=f'AUC = {pr_auc:.2f}')
+plt.xlabel('Recall')
+plt.ylabel('Precision')
+plt.title('Precision-Recall Curve')
+plt.legend(loc="lower left")
+plt.show()
+```
+
+# Conclusion
+Ensemble methods have revolutionized the field of classification by significantly improving the accuracy and robustness of predictive models. This blog aims to provide a comprehensive understanding of ensemble techniques and their practical implementation using Python. By highlighting the importance of evaluation metrics visualization, we emphasize the significance of performance analysis in assessing the effectiveness of classification models.

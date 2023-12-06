@@ -1,0 +1,163 @@
+---
+title: "Linear and Nonlinear Regression in Python"
+image: image.png
+author: "Swapnil Singh"
+date: "2023-11-06"
+categories: [regression, supervised learning]
+format:
+    html:
+        code-fold: true
+        code-tools: true
+jupyter: python3
+---
+
+Regression analysis is a powerful statistical method used to understand the relationship between a dependent variable and one or more independent variables. It is widely employed in various fields to make predictions and infer insights from data. In this blog, we'll delve into both linear and nonlinear regression and demonstrate how to implement them in Python.
+
+# Linear Regression
+
+Linear regression is a fundamental technique that models the relationship between two variables by fitting a linear equation to the observed data. The equation takes the form: y = mx + c, where y is the dependent variable, x is the independent variable, m is the slope, and c is the intercept.
+
+## Python Implementation
+
+### Randomly Generated Sampels
+@fig-dummy-results-linear visualizes the linear regression curve on 5 dummy points
+```{python}
+#| label: fig-dummy-results-linear
+#| fig-cap: "Linear Regression on Dummy Data"
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
+
+# Generating linear data
+X = np.array([1, 2, 3, 4, 5]).reshape((-1, 1))
+y = np.array([2, 3.9, 6.1, 8.2, 9.8])
+
+# Fitting linear regression model
+model = LinearRegression()
+model.fit(X, y)
+y_pred = model.predict(X)
+
+# Visualizing linear regression
+plt.scatter(X, y, color='blue', label='Data Points')
+plt.plot(X, y_pred, color='red', label='Linear Regression Line')
+plt.xlabel('X-axis')
+plt.ylabel('Y-axis')
+plt.legend()
+plt.show()
+
+slope = model.coef_[0]
+intercept = model.intercept_
+
+# Print the regression equation
+print(f"Regression Equation: y = {slope} * X + {intercept}")
+```
+
+### COVID-19 Severity Score Dataset
+```{python}
+import numpy as np
+from sklearn import datasets
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn import metrics
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# Load the covid-19 severity dataset
+data = pd.read_csv('COVID_19_CT_Severity_Score.csv')
+X = data.iloc[:,1:-2]
+y = data.iloc[:,-2]
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+
+# Create and fit the model
+model = LinearRegression()
+model.fit(X_train.values, y_train)
+
+# Make predictions
+y_pred = model.predict(X_test.values)
+
+print('R2 Score: ', metrics.r2_score(y_test, y_pred))
+print('MSE: ', metrics.mean_squared_error(y_test, y_pred))
+print('RMSE: ', (metrics.mean_squared_error(y_test, y_pred))**2)
+
+coefficients = model.coef_
+intercept = model.intercept_
+
+# Print the regression equation
+equation = "Regression Equation: y = {:.3f}".format(intercept)
+cols = list(X.columns)
+for i, coef in enumerate(coefficients):
+    equation += (" + {:.3f} * "+cols[i]).format(coef, i)
+print(equation)
+```
+
+# Nonlinear Regression
+
+Nonlinear regression allows us to model complex relationships between variables that cannot be represented by a linear equation. It employs nonlinear functions such as exponentials, logarithms, and polynomials to capture the underlying patterns in the data.
+
+## Python Implementation
+
+### Non Linear Curve Fitting
+@fig-dummy-results-nonlinear visualizes the non linear regression curve on 5 dummy points
+```{python}
+#| label: fig-dummy-results-nonlinear
+#| fig-cap: "Non Linear Regression on Dummy Data"
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
+
+# Generating nonlinear data
+X = np.array([1, 2, 3, 4, 5])
+y = np.array([2.5, 3.9, 6.3, 9.2, 14.1])
+
+# Defining a nonlinear function
+def nonlinear_func(x, a, b, c):
+    return a * np.exp(b * x) + c
+
+# Fitting nonlinear regression model
+params, covariance = curve_fit(nonlinear_func, X, y)
+a, b, c = params
+y_pred = nonlinear_func(X, a, b, c)
+
+# Visualizing nonlinear regression
+plt.scatter(X, y, color='blue', label='Data Points')
+plt.plot(X, y_pred, color='red', label='Nonlinear Regression Curve')
+plt.xlabel('X-axis')
+plt.ylabel('Y-axis')
+plt.legend()
+plt.show()
+```
+
+### Random Forest Regression
+```{python}
+from sklearn.ensemble import RandomForestRegressor
+import numpy as np
+from sklearn import datasets
+from sklearn.model_selection import train_test_split
+from sklearn import metrics
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# Load the diabetes dataset
+data = pd.read_csv('COVID_19_CT_Severity_Score.csv')
+X = data.iloc[:,1:-2]
+y = data.iloc[:,-2]
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+
+# Fitting the Random Forest Regression model
+regressor = RandomForestRegressor(n_estimators=100, random_state=0)
+regressor.fit(X_train.values, y_train)
+
+# Predicting the values
+y_pred = regressor.predict(X_test.values)
+
+print('R2 Score: ', metrics.r2_score(y_test, y_pred))
+print('MSE: ', metrics.mean_squared_error(y_test, y_pred))
+print('RMSE: ', (metrics.mean_squared_error(y_test, y_pred))**2)
+```
+
+# Conclusion
+In this blog, we covered the basics of linear and nonlinear regression, provided Python code examples, and visualized the results with graphs. Linear regression is suitable for modeling simple relationships, while nonlinear regression is essential for capturing complex patterns in the data. Python's rich ecosystem of libraries makes it convenient to implement regression analysis for various datasets and applications.
